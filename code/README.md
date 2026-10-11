@@ -1,6 +1,6 @@
 # Privacy-Aware Observability and Audit
 
-PRD 08 instrumentation overlay; earlier business and identity implementations are inherited through explicit local images. Compose project: `zero-trust-observability-audit`. Local acceptance criteria are verified, not production readiness.
+Observability and audit instrumentation overlay; earlier business and identity implementations are inherited through explicit local images. Compose project: `zero-trust-observability-audit`. Local acceptance criteria are verified, not production readiness.
 
 ## Run
 
