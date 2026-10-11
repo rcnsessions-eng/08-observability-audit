@@ -1,0 +1,20 @@
+[project]
+name = "learning-security-observability"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["opentelemetry-sdk==1.45.1", "opentelemetry-exporter-otlp-proto-http==1.45.1"]
+
+[tool.ruff]
+line-length = 96
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "learning_tools"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+cache_dir = "/dev/null"

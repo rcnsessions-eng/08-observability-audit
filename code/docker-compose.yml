@@ -1,0 +1,69 @@
+name: zero-trust-observability-audit
+services:
+  gateway:
+    extends:
+      file: ../../05-identity-delegation/code/docker-compose.yml
+      service: gateway
+    image: zero-trust-observability-audit-gateway:0.1.0
+    build:
+      context: ../..
+      dockerfile: 08-observability-audit/code/Dockerfile
+      target: runtime
+    ports: !override ["127.0.0.1:8228:8000"]
+    environment:
+      LEARNING_ISSUER: http://localhost:8428/realms/learning
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "2"}
+  keycloak:
+    extends:
+      file: ../../05-identity-delegation/code/docker-compose.yml
+      service: keycloak
+    ports: !override ["127.0.0.1:8428:8080"]
+    environment:
+      KC_HOSTNAME: http://localhost:8428
+  opa:
+    extends:
+      file: ../../05-identity-delegation/code/docker-compose.yml
+      service: opa
+  collector:
+    image: otel/opentelemetry-collector:0.162.0@sha256:310a800ad69ee430e7c541796852a242c9c7db97aaad4daa5ccf843c525fbdb2
+    command: [--config=/etc/otelcol/config.yaml]
+    volumes: ["./observability/collector.yaml:/etc/otelcol/config.yaml:ro"]
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "2"}
+  smoke:
+    image: zero-trust-observability-audit-gateway:0.1.0
+    command: [python, /telemetry-scripts/smoke.py]
+    environment:
+      LEARNING_GATEWAY_URL: http://gateway:8000
+      LEARNING_IDP_URL: http://keycloak:8080/realms/learning
+      LEARNING_DEMO_PASSWORD: "${LEARNING_DEMO_PASSWORD:?Use the identity project's env file}"
+      LEARNING_AGENT_SECRET: "${LEARNING_AGENT_SECRET:?Use the identity project's env file}"
+    profiles: [tools]
+    read_only: true
+    tmpfs: ["/tmp:size=32m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+  checks:
+    image: zero-trust-observability-audit-checks:0.1.0
+    build:
+      context: ../..
+      dockerfile: 08-observability-audit/code/Dockerfile
+      target: checks
+    network_mode: none
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: "${TELEMETRY_SUBNET:-10.218.48.0/24}"
